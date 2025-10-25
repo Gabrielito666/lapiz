@@ -1,0 +1,16 @@
+{
+  "name": "lapiz",
+  "version": "1.0.0",
+  "description": "jsDocs typed APIS maker",
+  "license": "ISC",
+  "author": "Gabriel Farías R",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
+  }
+}
