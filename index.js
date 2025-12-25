@@ -38,7 +38,10 @@ const {z} = require("zod");
  */
 
 //Declarations
-/*** @template {string}URL @typedef {{ request: z.ZodType<RequestVoidDef<URL>>; response: z.ZodType<ResponseDef>; }} VoidReqDeclarations*/
+/**
+ * @template {string}URL
+ * @typedef {{ request: z.ZodType<RequestVoidDef<URL>>; response: z.ZodType<ResponseDef>; }} VoidReqDeclarations
+ */
 /*** @template {string}URL @typedef {{ request: z.ZodType<RequestDef<URL>>; response: z.ZodType<ResponseDef>; }|VoidReqDeclarations<URL>} Declarations*/
 
 /*** @template {string}URL @template {VoidReqDeclarations<URL>}D @typedef { D & { constants: { url: URL; method: "GET"|"DELETE"; } } } ReqVoidEndpoint*/
@@ -71,52 +74,26 @@ const Lapiz = class
 			return { ...declarations, constants: { url, method: "DELETE" } };
 		}
 	}
-	static contentTypes =
-	{
+	static contentTypes = {
 		textPlain: z.literal("text/plain"),
 		applicationJson: z.literal("application/json")
-	};
-	static statusList =
-	{
-		notFound_404: z.literal(404),
+	}
+	static statusList = {
+		notFound_404: z.literal(404)
 		//etc
 	}
+	static Error = class
+	{
+		constructor()
+		{
 
-	constructor(){}
+		}
+	}
+
+	constructor()
+	{
+
+	}
 };
-
-//Prueba
-const ep = Lapiz.declareEndpoint.get("/hola/:mundo", {
-	request: z.object({
-		headers: z.object({
-			extraParam: z.string(),
-			extraParam2: z.string()
-		}),
-		urlParams: z.object({
-			mundo: z.string(),
-			hola: z.boolean()
-		}),
-		body : z.void(),
-	}),
-	response: z.union([
-		z.object({
-			status: z.literal(500),
-			headers: z.object({
-				"Content-Type": Lapiz.contentTypes.applicationJson
-			}),
-			body: z.object({
-				param1: z.string(),
-				param2: z.number()
-			})
-		}),
-		z.object({
-			status: z.literal(200),
-			headers: z.object({
-				"Content-Type": Lapiz.contentTypes.textPlain
-			}),
-			body: z.string()
-		})
-	])
-});
 
 module.exports = Lapiz;

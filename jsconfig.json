@@ -3,9 +3,10 @@
   {
     "checkJs": true,
     "allowJs": true,
-
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+	"esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowSuntethicDefaultImports": true,
     "target": "ES2020",
 
     "baseUrl": ".",
