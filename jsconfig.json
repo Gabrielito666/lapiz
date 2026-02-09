@@ -11,7 +11,10 @@
 
     "baseUrl": ".",
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "paths" : {
+    	"#lib/*" : ["./lib/*"]
+    }
   },
   "include": ["**/*.js", "**/*.d.ts"]
 }
