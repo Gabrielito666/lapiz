@@ -1,6 +1,6 @@
 {
 	"name": "lapiz",
-	"version": "1.0.0-beta",
+	"version": "1.0.1-beta",
 	"description": "jsDocs typed APIS maker",
 	"license": "ISC",
 	"author": "Gabriel Farías R",
@@ -32,16 +32,16 @@
 	},
 	"exports": {
 		".": {
-			"require": "./lib/lapiz.js",
-			"import": "./lib/lapiz.js"
+			"require": "./lib/lapiz/index.js",
+			"import": "./lib/lapiz/index.js"
 		},
 		"./sdk": {
-			"require": "./lib/sdk.js",
-			"import": "./lib/sdk.js"
+			"require": "./lib/sdk/index.js",
+			"import": "./lib/sdk/index.js"
 		},
 		"./backend": {
-			"require": "./lib/lapiz-backend.js",
-			"import": "./lib/lapiz-backend.js"
+			"require": "./lib/lapiz-backend/index.js",
+			"import": "./lib/lapiz-backend/index.js"
 		}
 	},
 	"imports": {
