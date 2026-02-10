@@ -1,190 +1,333 @@
 # Lapiz
 
-Lapiz es una librería de javascript para dibujar apis (Lek - Api'z), basada en zod y express.
+> An elegant TypeScript/JavaScript library for building type-safe APIs with Zod and Express
 
-La principal intención es permitir una construcción flexible de apis y generar implemntaciones de backend y sdk's para el frontend sin duplicar lógica de validaciones.
+Lapiz (Lek - Api'z) allows you to define API endpoints declaratively, automatically generating validations for both backend and strongly-typed SDKs for the frontend, eliminating validation logic duplication.
 
-## Instalación
+## 🚀 Features
 
-Para instalar lapiz en tu proyecto 
+- **End-to-end type-safety**: Automatic backend validation and complete frontend typing
+- **Declarative**: Define your endpoints once, use them everywhere
+- **Zod-powered**: Leverage Zod's power for robust validation schemas
+- **Express integration**: Seamlessly couples with your existing Express application
+- **Auto-generated SDK**: Fully typed HTTP client for your frontend
+
+## 📦 Installation
+
 ```bash
-npm i lapiz
+npm install lapiz
 ```
 
-## Lapiz
+## 🎯 Quick Start
 
-El modulo principal es una class con metodos estáticos. El principal es declareEndpoint, pero también hay metodos y propiedades de utilidad.
+### 1. Declare Your Endpoints
+
+Create a file to centralize all your endpoint definitions (e.g., `endpoints.js`):
 
 ```javascript
 const Lapiz = require("lapiz");
-const {z} = require("zod");
+const { z } = require("zod");
 
-const ep1 = Lapiz.declareEndpoint.put("crear-usuario", "/create/user/:username", {
-	request: z.object({
-		contentType: Lapiz.contentTypeSchemas.applicationJson,
-		urlParams: z.object({
-			username: z.string()
-		}),
-		headersParams: z.object({
-			"my-extra-param": z.union([z.literal("opt1"), z.literal("opt2")])
-		}),
-		body: z.object({
-			email: z.string(),
-			password: z.string(),
-			age: z.number(),
-			gender: z.union([z.literal("F"), z.literal("M")])
-		})
-	}),
-	response: z.union([
-		z.object({
-			contentType: Lapiz.contentTypeSchemas.void,
-			status: z.literal(200),
-			headersParams: z.object({}),
-			body: z.undefined()
-		}),
-		z.object({
-			contentType: Lapiz.contentTypeSchemas.textPlain,
-			status: z.literal(500),
-			headersParams: z.object({}),
-			body: z.union([z.literal("unexpected error"), z.literal("a tipical error")])
-		})
-	]);
-});
+const createUserEndpoint = Lapiz.declareEndpoint.put(
+  "create-user",
+  "/create/user/:username",
+  {
+    request: z.object({
+      contentType: Lapiz.contentTypeSchemas.applicationJson,
+      urlParams: z.object({
+        username: z.string()
+      }),
+      headersParams: z.object({
+        "my-extra-param": z.union([z.literal("opt1"), z.literal("opt2")])
+      }),
+      body: z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        age: z.number().int().positive(),
+        gender: z.union([z.literal("F"), z.literal("M")])
+      })
+    }),
+    response: z.union([
+      z.object({
+        contentType: Lapiz.contentTypeSchemas.void,
+        status: z.literal(200),
+        headersParams: z.object({}),
+        body: z.undefined()
+      }),
+      z.object({
+        contentType: Lapiz.contentTypeSchemas.textPlain,
+        status: z.literal(500),
+        headersParams: z.object({}),
+        body: z.union([
+          z.literal("unexpected error"),
+          z.literal("a typical error")
+        ])
+      })
+    ])
+  }
+);
 
-const ep2 = Lapiz.declareEndpoint.delete("delete-user", "/delete/user/:user_id", {
-	...
-})
-module.exports = { ep1, ep2 };
+const deleteUserEndpoint = Lapiz.declareEndpoint.delete(
+  "delete-user",
+  "/delete/user/:user_id",
+  {
+    // ... similar definition
+  }
+);
+
+module.exports = { createUserEndpoint, deleteUserEndpoint };
 ```
 
-Como puedes ver en el ejemplo tenemos una función declarativa que retorna un objeto Endpoint. declareEndpoint tiene metodos get, put, post y delete. Estos metodos requieren varios parametros:
-
-#### name
-el nombre del endpoint es un string que lo identifique. El usuario debe pensar bien en que nombre poner para evitar conficiones futuras.
-
-#### url
-La url es un string con formato de url de express... puedes poner parametros con `:` ej: `/my/url/:param1/:param2`
-
-#### declarations
-Este tercer parametro es un objeto con 2 propiedades. request y response. ambas deben ser zodTypes con ciertas reglas.
-
-##### request
-en el caso de request hay que poner un contentType que debe ser un zod literal de los contentType validos. Para evitar problemas Lapiz.contentTypesSchemas es un objeto con los schemas validos.
-(En el caso de get y delete deben ser Lapiz.contentTypeSchemas.void de forma obligatoria dada la naturaleza de estos metodos http).
-request tambien requiere urlParams que debe corresponderse con los parametros de la url, headersParams que está pensado para parametros extra a enviar en los headers. No son los headers reales, solo parametros extra
-además se requiere un body. este dependerá del contentType del request.
-
-si es textPlain, ZodType<string>;
-si es void, z.undefined();
-si es applicationJson, ZodType<Object>;
-si es imageJpeg, debe ser Lapiz.symbols.imageJpeg de forma obligatoria
-
-##### response
-tambien pide un contentType
-pide un status que debe ser un ZodType<number> (hay un listado muy util en Lapiz.resStatusSchemas)
-pide un headersParams igual que en request y un body igual
----
-La gracia de todo este asunto es ser espesífico y aprobechar las ZodUnion's.
-
-Las declaraciones es recomendable exportarlas desde un archivo unico que será nuestra fuente de verdad.
-
-## SDK
-
-es una class que crea un sdk para el frontend de forma muy simple.
-
-ej:
-
-```javascript
-import SDK from "lapiz/sdk";
-import {ep1, ep2} from "./mis-endpoints";
-
-const sdk = new SDK(ep1, ep2);
-
-const res = await sdk.call("create-user", {
-	contentType: "application/json"
-	urlParams: { username: "JohnLennon" },
-	headersParams: { "my-extra-params": "opt2" },
-	body: { email: "john@lennon.com", password: "hola1234", age: 44, gender: "M" }
-});
-
-if(res.error)
-{
-	alert(error.message);
-}
-else
-{
-	console.log(res.result.body) //undefined
-}
-```
-
-La gracia es que todo esta tipado de forma inteligente, por lo que te puedes dejar llevar por el lsp.
-
-hay que pasar los endpoints al constructor de SDK con new
-el primer parametro del metodo call es el nombre del endpoint y luego te pedirá un objeto congruente con tu endpoint.request
-retornará un objeto con propiedad error o result.
-
-### LapizBackend
-
-Es para implemntar tus endpoints en el servidor.
+### 2. Implement the Backend
 
 ```javascript
 const LapizBackend = require("lapiz/backend");
-const {ep1, ep2} = require("./mis-endpoints");
+const { createUserEndpoint, deleteUserEndpoint } = require("./endpoints");
 
-const implementation1 = LapizBakcend.implements(ep1, async({ contentType,urlParams, headersParams, body }, { expressReq, expressRes }) =>
-{
-	bla bla bla
+const createUserImplementation = LapizBackend.implements(
+  createUserEndpoint,
+  async ({ contentType, urlParams, headersParams, body }, { expressReq, expressRes }) => {
+    // Your business logic here
+    const user = await database.createUser({
+      username: urlParams.username,
+      ...body
+    });
 
-	debes retornar un objeto consistente con endpoint.response
-})
-const implamentation2 = LapizBackend.implements(ep2, ...);
+    return {
+      contentType: "void",
+      status: 200,
+      headersParams: {},
+      body: undefined
+    };
+  }
+);
 
-const backend = new LapizBackend(implementation1, implementation2);
+const deleteUserImplementation = LapizBackend.implements(
+  deleteUserEndpoint,
+  // ... your implementation
+);
 
-backend.router;		//express.Router
-```
+const backend = new LapizBackend(
+  createUserImplementation,
+  deleteUserImplementation
+);
 
-De esta forma tambien super bien tipado y facil de implementar. luego el router lo debes acoplar a un express.App
+// Integrate with Express
+const express = require("express");
+const app = express();
 
-ej:
-
-```javascript
 app.use(backend.router);
+
+app.listen(3000, () => {
+  console.log("API running on port 3000");
+});
 ```
 
-Los parametros de LapizBackend.implements son el endpoint, un objeto relacionado con en endpoint request y además hay un objeto con los res y req de express directamente por si debese setear alguna cookie u hacer algo más avanzado... lo importante de esto es que no hagas res.send() o res.status() o res.json o fallará
-## Consideraciones
-
-Esta es una versión beta, hay que probar bien todo antes de pasar a producción y notificar en caso de encontrar errores de lógica en lapiz.
-
-Cuidado con los headersParams. combiene no usarlo mucho, solo con objetos vacios, y siempre en lowercase porque los headrs no son caseSensitive.
-
-la librería esta pensada para rejectar errores del programador solamente. En caso de ser errores esperados se retorna un Lapiz.Error, la filosofía detras es que throw es para la exepciones, no para el control de flujo. Es decir, no esta pensado para capturar errores con try catch. los errores de lapiz deben saltar y corregirse.
-
-Hay una propiedad en Lapiz.Error message muy util para ventanas que vea el usuario. si quieres hacer un mensaje custom puedes usar Lapiz.setCustomErrorMessages()
-
-ej:
+### 3. Use the SDK on the Frontend
 
 ```javascript
-//en el archivo principal de las declaraciones
+import SDK from "lapiz/sdk";
+import { createUserEndpoint, deleteUserEndpoint } from "./endpoints";
 
-Lapiz.setCustomErrorMessages({
-	invalidRequest: "Has ingresado una peticion invalida",
-	fetch: "Error de red",
-	clientParseBody: "Error de tipos de la request",
-	unexpected: "Error inesperado"
+const sdk = new SDK(createUserEndpoint, deleteUserEndpoint);
+
+// Type-safe call with full autocompletion
+const result = await sdk.call("create-user", {
+  contentType: "application/json",
+  urlParams: { username: "JohnLennon" },
+  headersParams: { "my-extra-param": "opt2" },
+  body: {
+    email: "john@lennon.com",
+    password: "secure123",
+    age: 44,
+    gender: "M"
+  }
 });
 
-```
-
-luego si te llega un error puedes usar ese valor para un log o alert
-
-Tambien puedes usar condicionales tipo
-```javascript
-if(result.error instanceof Lapiz.Error.InvalidRequest)
-{
-	//...
+if (result.error) {
+  alert(result.error.message);
+} else {
+  console.log("User created successfully");
 }
 ```
 
-Quizas es un poco verboso pero es seguro. puedes envolver el sdk en uno más conciso de forma muy simple o añadir endpoints con tu app de express
+## 📚 Documentation
+
+### Endpoint Declaration
+
+The `Lapiz.declareEndpoint` method has variants for each HTTP method:
+
+- `Lapiz.declareEndpoint.get(name, url, declarations)`
+- `Lapiz.declareEndpoint.post(name, url, declarations)`
+- `Lapiz.declareEndpoint.put(name, url, declarations)`
+- `Lapiz.declareEndpoint.delete(name, url, declarations)`
+
+#### Parameters
+
+**`name`** (string)  
+Unique endpoint identifier. Choose descriptive names to avoid conflicts.
+
+**`url`** (string)  
+Endpoint path in Express format. Supports dynamic parameters with `:`:  
+Example: `/users/:userId/posts/:postId`
+
+**`declarations`** (object)  
+Object with two properties: `request` and `response`
+
+##### Request Schema
+
+```javascript
+request: z.object({
+  contentType: Lapiz.contentTypeSchemas.applicationJson, // or textPlain, void, imageJpeg
+  urlParams: z.object({ /* URL parameters */ }),
+  headersParams: z.object({ /* custom headers */ }),
+  body: z.object({ /* request body */ })
+})
+```
+
+**Available Content-Type values:**
+- `Lapiz.contentTypeSchemas.applicationJson` → Body: `ZodType<Object>`
+- `Lapiz.contentTypeSchemas.textPlain` → Body: `ZodType<string>`
+- `Lapiz.contentTypeSchemas.void` → Body: `z.undefined()`
+- `Lapiz.contentTypeSchemas.imageJpeg` → Body: `Lapiz.symbols.imageJpeg`
+
+> ⚠️ **Note**: `GET` and `DELETE` methods must use `contentType: void` by default due to the nature of these HTTP methods
+
+##### Response Schema
+
+```javascript
+response: z.union([
+  z.object({
+    contentType: Lapiz.contentTypeSchemas.applicationJson,
+    status: z.literal(200), // or use Lapiz.resStatusSchemas
+    headersParams: z.object({}),
+    body: z.object({ /* response data */ })
+  }),
+  z.object({
+    contentType: Lapiz.contentTypeSchemas.textPlain,
+    status: z.literal(500),
+    headersParams: z.object({}),
+    body: z.string()
+  })
+])
+```
+
+**Tip:** Use `z.union()` to define multiple possible responses (success, errors, etc.)
+
+### Client SDK
+
+```javascript
+import SDK from "lapiz/sdk";
+
+const sdk = new SDK(endpoint1, endpoint2, endpoint3);
+
+const result = await sdk.call("endpoint-name", requestData);
+```
+
+The SDK provides:
+- ✅ Full TypeScript/JavaScript autocompletion
+- ✅ Automatic request validation
+- ✅ Response typing
+- ✅ Structured error handling
+
+### Backend
+
+```javascript
+const LapizBackend = require("lapiz/backend");
+
+const implementation = LapizBackend.implements(
+  endpoint,
+  async (request, { expressReq, expressRes }) => {
+    // request contains: contentType, urlParams, headersParams, body
+    // Don't use expressRes.send(), expressRes.json() or expressRes.status()
+    
+    return {
+      contentType: "application/json",
+      status: 200,
+      headersParams: {},
+      body: { success: true }
+    };
+  }
+);
+
+const backend = new LapizBackend(implementation1, implementation2);
+
+// backend.router is an express.Router
+app.use(backend.router);
+```
+
+> ⚠️ **Important**: Don't use Express response methods directly (`res.send()`, `res.json()`, `res.status()`). Lapiz handles responses automatically.
+
+## 🛡️ Error Handling
+
+Lapiz uses error objects instead of exceptions for flow control:
+
+```javascript
+if (result.error) {
+  // Specific error handling
+  if (result.error instanceof Lapiz.Error.InvalidRequest) {
+    console.log("Invalid request");
+  } else if (result.error instanceof Lapiz.Error.Fetch) {
+    console.log("Network error");
+  }
+  
+  // Or use the generic message
+  alert(result.error.message);
+}
+```
+
+### Custom Error Messages
+
+```javascript
+Lapiz.setCustomErrorMessages({
+  invalidRequest: "You have entered an invalid request",
+  fetch: "Server connection error",
+  clientParseBody: "Error processing response",
+  unexpected: "An unexpected error occurred"
+});
+```
+
+### Error Types
+
+- `Lapiz.Error.InvalidRequest` - Request doesn't comply with schema
+- `Lapiz.Error.Fetch` - Network or connection error
+- `Lapiz.Error.ClientParseBody` - Error parsing response
+- `Lapiz.Error.Unexpected` - Unanticipated errors
+
+> 💡 **Philosophy**: `throw` is reserved for programmer exceptions that must be fixed. Expected errors are handled through the `result.error` object.
+
+## ⚠️ Important Considerations
+
+### Custom Headers
+
+The `headersParams` should always be written in **lowercase** since HTTP headers are not case-sensitive:
+
+```javascript
+headersParams: z.object({
+  "authorization": z.string(),  // ✅ Correct
+  "Authorization": z.string()   // ❌ May cause issues
+})
+```
+
+It's recommended to use them sparingly and prefer empty objects when possible.
+
+### Beta Status
+
+This is a beta version. It's recommended to:
+- Perform thorough testing before production
+- Report any errors or unexpected behavior
+- Review generated validations
+
+## 📄 License
+
+MIT
+
+## 🙋 Support
+
+If you encounter any issues or have questions:
+- Open an issue on GitHub
+- [Add other contact channels]
+
+---
+
+Made with ❤️ for developers who value type-safety
