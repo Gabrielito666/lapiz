@@ -1,5 +1,3 @@
-- El response de jpeg_image hay que verificar que el tipo de stream que retorna el usuario sea del mimetype correcto
-- para esto hay que ExpressParser.parseRes con el endpoint.declaration.response.safeParse()
-- externalizar express-parser como el fetch-handler y renombrar ambos
--
-- quizas express-handler o similar
+- Lapiz.resStatusSchemas con todos (externalizar un objeto comun entre LapizBakcend y Lapiz)
+- Pasar README.md a un llm para que lo traduzca y ordene
+- more mimetypes
