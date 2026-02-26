@@ -1,3 +1,7 @@
-- Lapiz.resStatusSchemas con todos (externalizar un objeto comun entre LapizBakcend y Lapiz)
-- Pasar README.md a un llm para que lo traduzca y ordene
 - more mimetypes
+-
+- resolver el tema de zod... el lsp falla si tiene una version de zod diferente
+-
+- hacer tests unitarios
+-
+-
