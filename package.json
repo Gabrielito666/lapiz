@@ -34,7 +34,7 @@
 	},
 	"exports": {
         	"./sdk": { "import": "./lib/sdk/index.js" },
-        	"./api-caller": { "import" "./lib/api-caller/index.js" },
+        	"./api-caller": { "import": "./lib/api-caller/index.js" },
         	"./router": { "require": "./lib/router/index.js" },
         	"./route-handler": { "require": "./lib/route-handler/index.js" },
 		"./frontend-error": { "import": "./lib/frontend-error/index.js" },
