@@ -1,7 +1,0 @@
-- more mimetypes
--
-- resolver el tema de zod... el lsp falla si tiene una version de zod diferente
--
-- hacer tests unitarios
--
--

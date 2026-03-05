@@ -1,6 +1,6 @@
 {
 	"name": "lapiz",
-	"version": "1.0.5-beta",
+	"version": "2.0.0-beta",
 	"description": "jsDocs typed APIS maker",
 	"license": "ISC",
 	"author": "Gabriel Farías R",
@@ -9,8 +9,6 @@
 	"keywords": [
 		"api",
 		"express",
-		"zod",
-		"typescript",
 		"validation",
 		"type-safe",
 		"rest",
@@ -25,32 +23,25 @@
 	"files": [
 		"lib/",
 		"LICENSE",
-		"README.md"
+		"README.md",
+		"jsconfig.js"
 	],
 	"engines": {
 		"node": ">=18.0.0"
 	},
-	"exports": {
-		".": {
-			"require": "./lib/lapiz/index.js",
-			"import": "./lib/lapiz/index.js"
-		},
-		"./sdk": {
-			"require": "./lib/sdk/index.js",
-			"import": "./lib/sdk/index.js"
-		},
-		"./backend": {
-			"require": "./lib/lapiz-backend/index.js",
-			"import": "./lib/lapiz-backend/index.js"
-		}
-	},
 	"imports": {
-		"#lib/*": "./lib/*/index.js"
+		"#lib/*": "./lib/*"
 	},
+	"exports": {
+        	"./sdk": { "import": "./lib/sdk/index.js" },
+        	"./api-caller": { "import" "./lib/api-caller/index.js" },
+        	"./router": { "require": "./lib/router/index.js" },
+        	"./route-handler": { "require": "./lib/route-handler/index.js" },
+		"./frontend-error": { "import": "./lib/frontend-error/index.js" },
+        	"./backend-error": { "require": "./lib/backend-error/index.js" }
+  	},
 	"dependencies": {
-		"express": "5.1.0",
-		"file-type": "21.3.0",
-		"zod": "4.1.12"
+		"express": "5.1.0"
 	},
 	"devDependencies": {
 		"@types/express": "5.0.6"

@@ -1,333 +1,214 @@
 # Lapiz
 
-> An elegant TypeScript/JavaScript library for building type-safe APIs with Zod and Express
+Lapiz (or `lek-apis`) is a class library for standardizing API endpoints on both the backend and frontend.
 
-Lapiz (Lek - Api'z) allows you to define API endpoints declaratively, automatically generating validations for both backend and strongly-typed SDKs for the frontend, eliminating validation logic duplication.
-
-## 🚀 Features
-
-- **End-to-end type-safety**: Automatic backend validation and complete frontend typing
-- **Declarative**: Define your endpoints once, use them everywhere
-- **Zod-powered**: Leverage Zod's power for robust validation schemas
-- **Express integration**: Seamlessly couples with your existing Express application
-- **Auto-generated SDK**: Fully typed HTTP client for your frontend
-
-## 📦 Installation
+## Installation
 
 ```bash
-npm install lapiz
+npm i lapiz
 ```
-
-## 🎯 Quick Start
-
-### 1. Declare Your Endpoints
-
-Create a file to centralize all your endpoint definitions (e.g., `endpoints.js`):
-
-```javascript
-const Lapiz = require("lapiz");
-const { z } = require("zod");
-
-const createUserEndpoint = Lapiz.declareEndpoint.put(
-  "create-user",
-  "/create/user/:username",
-  {
-    request: z.object({
-      contentType: Lapiz.contentTypeSchemas.applicationJson,
-      urlParams: z.object({
-        username: z.string()
-      }),
-      headersParams: z.object({
-        "my-extra-param": z.union([z.literal("opt1"), z.literal("opt2")])
-      }),
-      body: z.object({
-        email: z.string().email(),
-        password: z.string().min(8),
-        age: z.number().int().positive(),
-        gender: z.union([z.literal("F"), z.literal("M")])
-      })
-    }),
-    response: z.union([
-      z.object({
-        contentType: Lapiz.contentTypeSchemas.void,
-        status: z.literal(200),
-        headersParams: z.object({}),
-        body: z.undefined()
-      }),
-      z.object({
-        contentType: Lapiz.contentTypeSchemas.textPlain,
-        status: z.literal(500),
-        headersParams: z.object({}),
-        body: z.union([
-          z.literal("unexpected error"),
-          z.literal("a typical error")
-        ])
-      })
-    ])
-  }
-);
-
-const deleteUserEndpoint = Lapiz.declareEndpoint.delete(
-  "delete-user",
-  "/delete/user/:user_id",
-  {
-    // ... similar definition
-  }
-);
-
-module.exports = { createUserEndpoint, deleteUserEndpoint };
-```
-
-### 2. Implement the Backend
-
-```javascript
-const LapizBackend = require("lapiz/backend");
-const { createUserEndpoint, deleteUserEndpoint } = require("./endpoints");
-
-const createUserImplementation = LapizBackend.implements(
-  createUserEndpoint,
-  async ({ contentType, urlParams, headersParams, body }, { expressReq, expressRes }) => {
-    // Your business logic here
-    const user = await database.createUser({
-      username: urlParams.username,
-      ...body
-    });
-
-    return {
-      contentType: "void",
-      status: 200,
-      headersParams: {},
-      body: undefined
-    };
-  }
-);
-
-const deleteUserImplementation = LapizBackend.implements(
-  deleteUserEndpoint,
-  // ... your implementation
-);
-
-const backend = new LapizBackend(
-  createUserImplementation,
-  deleteUserImplementation
-);
-
-// Integrate with Express
-const express = require("express");
-const app = express();
-
-app.use(backend.router);
-
-app.listen(3000, () => {
-  console.log("API running on port 3000");
-});
-```
-
-### 3. Use the SDK on the Frontend
-
-```javascript
-import SDK from "lapiz/sdk";
-import { createUserEndpoint, deleteUserEndpoint } from "./endpoints";
-
-const sdk = new SDK(createUserEndpoint, deleteUserEndpoint);
-
-// Type-safe call with full autocompletion
-const result = await sdk.call("create-user", {
-  contentType: "application/json",
-  urlParams: { username: "JohnLennon" },
-  headersParams: { "my-extra-param": "opt2" },
-  body: {
-    email: "john@lennon.com",
-    password: "secure123",
-    age: 44,
-    gender: "M"
-  }
-});
-
-if (result.error) {
-  alert(result.error.message);
-} else {
-  console.log("User created successfully");
-}
-```
-
-## 📚 Documentation
-
-### Endpoint Declaration
-
-The `Lapiz.declareEndpoint` method has variants for each HTTP method:
-
-- `Lapiz.declareEndpoint.get(name, url, declarations)`
-- `Lapiz.declareEndpoint.post(name, url, declarations)`
-- `Lapiz.declareEndpoint.put(name, url, declarations)`
-- `Lapiz.declareEndpoint.delete(name, url, declarations)`
-
-#### Parameters
-
-**`name`** (string)  
-Unique endpoint identifier. Choose descriptive names to avoid conflicts.
-
-**`url`** (string)  
-Endpoint path in Express format. Supports dynamic parameters with `:`:  
-Example: `/users/:userId/posts/:postId`
-
-**`declarations`** (object)  
-Object with two properties: `request` and `response`
-
-##### Request Schema
-
-```javascript
-request: z.object({
-  contentType: Lapiz.contentTypeSchemas.applicationJson, // or textPlain, void, imageJpeg
-  urlParams: z.object({ /* URL parameters */ }),
-  headersParams: z.object({ /* custom headers */ }),
-  body: z.object({ /* request body */ })
-})
-```
-
-**Available Content-Type values:**
-- `Lapiz.contentTypeSchemas.applicationJson` → Body: `ZodType<Object>`
-- `Lapiz.contentTypeSchemas.textPlain` → Body: `ZodType<string>`
-- `Lapiz.contentTypeSchemas.void` → Body: `z.undefined()`
-- `Lapiz.contentTypeSchemas.imageJpeg` → Body: `Lapiz.symbols.imageJpeg`
-
-> ⚠️ **Note**: `GET` and `DELETE` methods must use `contentType: void` by default due to the nature of these HTTP methods
-
-##### Response Schema
-
-```javascript
-response: z.union([
-  z.object({
-    contentType: Lapiz.contentTypeSchemas.applicationJson,
-    status: z.literal(200), // or use Lapiz.resStatusSchemas
-    headersParams: z.object({}),
-    body: z.object({ /* response data */ })
-  }),
-  z.object({
-    contentType: Lapiz.contentTypeSchemas.textPlain,
-    status: z.literal(500),
-    headersParams: z.object({}),
-    body: z.string()
-  })
-])
-```
-
-**Tip:** Use `z.union()` to define multiple possible responses (success, errors, etc.)
-
-### Client SDK
-
-```javascript
-import SDK from "lapiz/sdk";
-
-const sdk = new SDK(endpoint1, endpoint2, endpoint3);
-
-const result = await sdk.call("endpoint-name", requestData);
-```
-
-The SDK provides:
-- ✅ Full TypeScript/JavaScript autocompletion
-- ✅ Automatic request validation
-- ✅ Response typing
-- ✅ Structured error handling
-
-### Backend
-
-```javascript
-const LapizBackend = require("lapiz/backend");
-
-const implementation = LapizBackend.implements(
-  endpoint,
-  async (request, { expressReq, expressRes }) => {
-    // request contains: contentType, urlParams, headersParams, body
-    // Don't use expressRes.send(), expressRes.json() or expressRes.status()
-    
-    return {
-      contentType: "application/json",
-      status: 200,
-      headersParams: {},
-      body: { success: true }
-    };
-  }
-);
-
-const backend = new LapizBackend(implementation1, implementation2);
-
-// backend.router is an express.Router
-app.use(backend.router);
-```
-
-> ⚠️ **Important**: Don't use Express response methods directly (`res.send()`, `res.json()`, `res.status()`). Lapiz handles responses automatically.
-
-## 🛡️ Error Handling
-
-Lapiz uses error objects instead of exceptions for flow control:
-
-```javascript
-if (result.error) {
-  // Specific error handling
-  if (result.error instanceof Lapiz.Error.InvalidRequest) {
-    console.log("Invalid request");
-  } else if (result.error instanceof Lapiz.Error.Fetch) {
-    console.log("Network error");
-  }
-  
-  // Or use the generic message
-  alert(result.error.message);
-}
-```
-
-### Custom Error Messages
-
-```javascript
-Lapiz.setCustomErrorMessages({
-  invalidRequest: "You have entered an invalid request",
-  fetch: "Server connection error",
-  clientParseBody: "Error processing response",
-  unexpected: "An unexpected error occurred"
-});
-```
-
-### Error Types
-
-- `Lapiz.Error.InvalidRequest` - Request doesn't comply with schema
-- `Lapiz.Error.Fetch` - Network or connection error
-- `Lapiz.Error.ClientParseBody` - Error parsing response
-- `Lapiz.Error.Unexpected` - Unanticipated errors
-
-> 💡 **Philosophy**: `throw` is reserved for programmer exceptions that must be fixed. Expected errors are handled through the `result.error` object.
-
-## ⚠️ Important Considerations
-
-### Custom Headers
-
-The `headersParams` should always be written in **lowercase** since HTTP headers are not case-sensitive:
-
-```javascript
-headersParams: z.object({
-  "authorization": z.string(),  // ✅ Correct
-  "Authorization": z.string()   // ❌ May cause issues
-})
-```
-
-It's recommended to use them sparingly and prefer empty objects when possible.
-
-### Beta Status
-
-This is a beta version. It's recommended to:
-- Perform thorough testing before production
-- Report any errors or unexpected behavior
-- Review generated validations
-
-## 📄 License
-
-MIT
-
-## 🙋 Support
-
-If you encounter any issues or have questions:
-- Open an issue on GitHub
-- [Add other contact channels]
 
 ---
 
-Made with ❤️ for developers who value type-safety
+## ApiCaller (frontend)
+
+An `ApiCaller` is an abstract class you must extend to define how each API endpoint is called from the frontend. You must implement three methods:
+
+- `buildReq(input)` — builds the request object from the input.
+- `parseResFromRaw(rawRes, extra)` — parses the raw response. Returns a `LapizRes` or a `LapizFrontendError.UnexpectedResponse`.
+- `parseOutput(res)` — transforms the `LapizRes` into the final output that the SDK consumer will receive.
+
+```javascript
+import ApiCaller from "lapiz/api-caller"
+import LapizFrontendError from "lapiz/frontend-error"
+import { hostName } from "./constants.js"
+
+/**
+ * @typedef {"create-pig"} Name
+ * @typedef {"/create-pig/:name"} Route
+ * @typedef {{ name: string; age: number; }} Input
+ * @typedef {{ success: true; error: null; } | { success: false; error: Error; }} Output
+ * @typedef {{ "content-type": "application/json"; routeParams: { name: string }; body: { age: number } }} Req
+ * @typedef {{ status: 200 | 500 }} Res
+ */
+
+/**
+ * @import {IApiCaller} from "lapiz/api-caller"
+ */
+
+/**
+ * @class
+ * @extends {ApiCaller.PUT<Name, Route, Input, Output, Req, Res>}
+ * @implements {IApiCaller<Name, Route, Input, Output, Req, Res>}
+ */
+const CreatePig = class extends ApiCaller.PUT
+{
+	constructor()
+	{
+		super("create-pig", hostName, "/create-pig/:name");
+	}
+
+	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["buildReq"]} */
+	buildReq(input)
+	{
+		return {
+			"content-type": "application/json",
+			routeParams: { name: input.name },
+			body: { age: input.age }
+		}
+	}
+
+	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["parseResFromRaw"]} */
+	parseResFromRaw(rawResponse, { contentType, body })
+	{
+		if(rawResponse.status === 200) return { status: 200 };
+		if(rawResponse.status === 500) return { status: 500 };
+		return new LapizFrontendError.UnexpectedResponse("Unexpected server response");
+	}
+
+	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["parseOutput"]} */
+	parseOutput(res)
+	{
+		return res.status === 200
+			? { success: true, error: null }
+			: { success: false, error: new Error("Failed to create pig") };
+	}
+}
+
+export default CreatePig;
+```
+
+There are four variants depending on the HTTP method: `ApiCaller.GET`, `ApiCaller.POST`, `ApiCaller.PUT`, `ApiCaller.DELETE`.
+
+---
+
+## SDK (frontend)
+
+The `SDK` groups multiple `ApiCaller`s and exposes a `call(name, input)` method with automatically inferred typing.
+
+```javascript
+import SDK from "lapiz/sdk";
+import CreatePig from "./create-pig.js"
+
+const sdk = new SDK(
+	new CreatePig(),
+	// ...more callers
+);
+
+(async () =>
+{
+	const res = await sdk.call("create-pig", { name: "oink", age: 66 });
+
+	if(res.error)
+	{
+		console.error(res.error); // LapizFrontendError with the problem
+	}
+	else
+	{
+		console.log(res.output); // { success: true; error: null } | { success: false; error: Error }
+	}
+})();
+```
+
+---
+
+## RouteHandler (backend)
+
+The `RouteHandler` is the server-side equivalent of the `ApiCaller`. You must implement three methods:
+
+- `parseInput(expressReq)` — extracts and validates the input from the Express request. Returns the input or a `LapizBackendError.BadRequest`.
+- `handle(input, extra)` — contains the endpoint logic. Returns the output.
+- `buildRes(output, extra)` — builds the `LapizRes` response object from the output.
+
+```javascript
+const RouteHandler = require("lapiz/route-handler");
+const LapizBackendError = require("lapiz/backend-error");
+
+/**
+ * The types (N, R, I, O, Req, Res) are the same as in the frontend ApiCaller.
+ *
+ * @implements {IRouteHandler<N, R, I, O, Req, Res>}
+ * @extends {RouteHandler.PUT<N, R, I, O, Req, Res>}
+ */
+const CreatePig = class extends RouteHandler.PUT
+{
+	constructor()
+	{
+		super("create-pig", "/create-pig/:name");
+	}
+
+	parseInput(rawExpressReq)
+	{
+		if(typeof rawExpressReq.body.age !== "number")
+		{
+			return new LapizBackendError.BadRequest("The 'age' field must be a number");
+		}
+		return {
+			name: rawExpressReq.params.name,
+			age: rawExpressReq.body.age
+		};
+	}
+
+	async handle(input)
+	{
+		await myDatabase.insertPig(input.name, input.age);
+		return { success: true, error: null };
+	}
+
+	buildRes(output)
+	{
+		return {
+			status: output.success ? 200 : 500
+		};
+	}
+}
+
+module.exports = CreatePig;
+```
+
+There are four variants: `RouteHandler.GET`, `RouteHandler.POST`, `RouteHandler.PUT`, `RouteHandler.DELETE`.
+
+---
+
+## Router (backend)
+
+The `Router` takes a list of `RouteHandler`s and registers them on an Express application.
+
+```javascript
+const Router = require("lapiz/router");
+const express = require("express");
+const CreatePig = require("./create-pig.js");
+
+const router = new Router(
+	new CreatePig(),
+	// ...more handlers
+);
+
+const app = express();
+router.addToApp(app);
+app.listen(3000, () => { console.log("Listening on localhost:3000") });
+```
+
+---
+
+## Notes on body types
+
+When the `content-type` is `application/json`, `text/plain`, or there is no body (`void`), the `Req` and `Res` types are identical between frontend and backend.
+
+For binary content (`BinaryMimeType`), the `body` type differs:
+
+| Side | `body` type in `Req` | `body` type in `Res` |
+|------|----------------------|----------------------|
+| Frontend | `BodyInit` (`File`, `Blob`, etc.) | `ReadableStream` |
+| Backend | `import("node:stream").Readable` | `import("node:stream").Readable` |
+
+---
+
+## Error handling
+
+All errors that `sdk.call()` can return are instances of `LapizFrontendError`:
+
+- `LapizFrontendError.FetchError` — the `fetch` call failed (no connection, CORS, etc.).
+- `LapizFrontendError.ServerError` — the server returned the `lapiz-backend-error` header.
+- `LapizFrontendError.ParseError` — error while parsing the response body.
+- `LapizFrontendError.UnexpectedResponse` — `parseResFromRaw` returned an unhandled response.
