@@ -25,25 +25,25 @@ export type LapizReqVOID<R extends string = string> =
 {
 	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
-	"content-type"?: never;
+	contentType?: never;
 	body?: never;
 }
 export type LapizReqTEXT<R extends string = string> = {
 	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
-	"content-type": "text/plain";
+	contentType: "text/plain";
 	body: string;
 }
 export type LapizReqJSON<R extends string = string> = {
 	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
-	"content-type": "application/json";
+	contentType: "application/json";
 	body: Object;
 }
 export type LapizReqBLOB<R extends string = string> = {
 	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
-	"content-type": BinaryMimeType;
+	contentType: BinaryMimeType;
 	body: NodeStream.Readable;
 }
 export type LapizReq<R extends string = string> = 
@@ -57,28 +57,28 @@ export type LapizResVOID =
 {
 	status: number;
 	headers?: Record<string, string>;
-	"content-type"?: never;
+	contentType?: never;
 	body?: never;
 }
 export type LapizResTEXT =
 {
 	status: number;
 	headers?: Record<string, string>;
-	"content-type": "text/plain";
+	contentType: "text/plain";
 	body: string;
 }
 export type LapizResJSON =
 {
 	status: number;
 	headers?: Record<string, string>;
-	"content-type": "application/json";
+	contentType: "application/json";
 	body: Object;
 }
 export type LapizResBLOB =
 {
 	status: number;
 	headers?: Record<string, string>;
-	"content-type": BinaryMimeType;
+	contentType: BinaryMimeType;
 	body: NodeStream.Readable;
 }
 export type LapizRes = LapizResVOID|LapizResTEXT|LapizResJSON|LapizResBLOB;
