@@ -1,6 +1,6 @@
 {
 	"name": "lapiz",
-	"version": "2.0.1-beta",
+	"version": "2.0.2-beta",
 	"description": "jsDocs typed APIS maker",
 	"license": "ISC",
 	"author": "Gabriel Farías R",
@@ -33,11 +33,20 @@
 		"#lib/*": "./lib/*"
 	},
 	"exports": {
-        	"./sdk": { "import": "./lib/sdk/index.js" },
-        	"./api-caller": { "import": "./lib/api-caller/index.js" },
+        	"./sdk": {
+			"import": "./lib/sdk/index.js",
+			"default": "./lib/sdk/index.js"
+		},
+        	"./api-caller": {
+			"import": "./lib/api-caller/index.js",
+			"default": "./lib/api-caller/index.js"
+		},
         	"./router": { "require": "./lib/router/index.js" },
         	"./route-handler": { "require": "./lib/route-handler/index.js" },
-		"./frontend-error": { "import": "./lib/frontend-error/index.js" },
+		"./frontend-error": {
+			"import": "./lib/frontend-error/index.js",
+			"default": "./lib/frontend-error/index.js"
+		},
         	"./backend-error": { "require": "./lib/backend-error/index.js" }
   	},
 	"dependencies": {

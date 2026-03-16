@@ -23,25 +23,25 @@ type BinaryMimeType =
 
 export type LapizReqVOID<R extends string = string> =
 {
-	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
+	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
 	contentType?: never;
 	body?: never;
 }
 export type LapizReqTEXT<R extends string = string> = {
-	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
+	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
 	contentType: "text/plain";
 	body: string;
 }
 export type LapizReqJSON<R extends string = string> = {
-	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
+	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
 	contentType: "application/json";
 	body: Object;
 }
 export type LapizReqBLOB<R extends string = string> = {
-	routeParams: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
+	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
 	contentType: BinaryMimeType;
 	body: BodyInit;
