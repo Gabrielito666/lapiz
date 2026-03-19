@@ -212,3 +212,7 @@ All errors that `sdk.call()` can return are instances of `LapizFrontendError`:
 - `LapizFrontendError.ServerError` — the server returned the `lapiz-backend-error` header.
 - `LapizFrontendError.ParseError` — error while parsing the response body.
 - `LapizFrontendError.UnexpectedResponse` — `parseResFromRaw` returned an unhandled response.
+
+#### Important notes:
+
+Currently, the GET and DELETE methods in routeHandler do not throw an error if they receive a body. Be sure not to use either contentType or body in these methods, as this can lead to silent errors.
