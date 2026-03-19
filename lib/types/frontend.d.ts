@@ -38,7 +38,7 @@ export type LapizReqJSON<R extends string = string> = {
 	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
 	headers?: Record<string, string>;
 	contentType: "application/json";
-	body: Object;
+	body: Record<string, unknown>;
 }
 export type LapizReqBLOB<R extends string = string> = {
 	routeParams?: RouteParameters<R> extends Record<string, never> ? never : RouteParameters<R>;
