@@ -15,8 +15,7 @@ npm i lapiz
 Un `ApiCaller` es una clase abstracta que debes extender para definir cómo se llama a cada endpoint de tu API desde el frontend. Debes implementar tres métodos:
 
 - `buildReq(input)` — construye el objeto de request a partir del input.
-- `parseResFromRaw(rawRes, extra)` — parsea la respuesta cruda. Retorna un `LapizRes` o un `LapizFrontendError.UnexpectedResponse`.
-- `parseOutput(res)` — transforma el `LapizRes` en el output final que recibirá el consumidor del SDK.
+- `parseOutput(rawRes, extra)` — transforma el la respuesta cruda en el output final que recibirá el consumidor del SDK.
 
 ```javascript
 import ApiCaller from "lapiz/api-caller"
@@ -58,20 +57,16 @@ const CreatePig = class extends ApiCaller.PUT
 		}
 	}
 
-	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["parseResFromRaw"]} */
-	parseResFromRaw(rawResponse, { contentType, body })
-	{
-		if(rawResponse.status === 200) return { status: 200 };
-		if(rawResponse.status === 500) return { status: 500 };
-		return new LapizFrontendError.UnexpectedResponse("Respuesta inesperada del servidor");
-	}
-
 	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["parseOutput"]} */
-	parseOutput(res)
+	parseOutput(rawResponse, extra)
 	{
-		return res.status === 200
-			? { success: true, error: null }
-			: { success: false, error: new Error("Error al crear el cerdo") };
+		if(rawResponse.status === 200) return { success: true, error: null };
+		if(rawResponse.status === 500) return {
+			success: false,
+			error: new Error("Error al crear el cerdo")
+		};
+
+		return new ApiCaller.Error.UnexpectedResponse("Respuesta inesperada del servidor");
 	}
 }
 
