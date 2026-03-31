@@ -1,3 +1,4 @@
+
 /**
  * @file
  * @source lib/frontend-error/index.js
@@ -77,4 +78,4 @@ LapizFrontendError.ParseError = LapizFrontendError_ParseError
  * @typedef {LapizFrontendError_ParseError} TLapizFrontendError_ParseError
  */
 
-module.exports = LapizFrontendError;
+export default LapizFrontendError;

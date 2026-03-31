@@ -1,16 +1,17 @@
+import LapizFrontendError from '#module-js-lib/frontend-error/index.js'
+
 /**
  * @file
  * @source lib/api-caller/index.js
  * @module lapiz/api-caller
  */
-const LapizFrontendError = require("#lib/frontend-error/index.js");
 
 /**
  * @import {RouteParameters} from "express-serve-static-core"
- * @import {LapizReq, LapizRes, LapizReqVOID, BinaryMimeType} from "#lib/types/frontend.d.ts"
+ * @import {LapizReq, LapizRes, LapizReqVOID, BinaryMimeType} from "#module-js-lib/types/frontend.d.ts"
  * @import {
  * 	TLapizFrontendError
- * } from "#lib/frontend-error/index.js"
+ * } from "#module-js-lib/frontend-error/index.js"
  */
 
 const BINARY_MIME_TYPES = [
@@ -151,17 +152,15 @@ const ApiCaller = class
 		}
 
 		const resContentType = data.headers.get("content-type");
-		const normalizedResContentType = resContentType ? resContentType.split(";")[0].trim() : null;
 
-
-		if(!normalizedResContentType || data.body === null)
+		if(!resContentType || data.body === null)
 		{
 			return {
 				rawRes: data,
 				extra: { contentType: null, body: null }
 			};
 		}
-		if(normalizedResContentType === "application/json")
+		if(resContentType === "application/json")
 		{
 			const parsed = await ApiCaller.toSafe(data.json());
 			if(parsed.error) return new ApiCaller.Error.ParseError("[LAPIZ ERROR]: Error when try parse the body with res.json()", parsed.error)
@@ -170,7 +169,7 @@ const ApiCaller = class
 				extra: { contentType: "application/json", body: parsed.data }
 			}
 		}
-		if(normalizedResContentType === "text/plain")
+		if(resContentType === "text/plain")
 		{
 			const parsed = await ApiCaller.toSafe(data.text());
 			if(parsed.error) return new ApiCaller.Error.ParseError("[LAPIZ ERROR]: Error when try parse the body with res.text()", parsed.error);
@@ -180,7 +179,7 @@ const ApiCaller = class
 				extra: { contentType: "text/plain", body: parsed.data }
 			}
 		}
-		if(!BINARY_MIME_TYPES.includes(normalizedResContentType))
+		if(!BINARY_MIME_TYPES.includes(resContentType))
 		{
 			throw new Error(`Lapiz not support mimetype "${resContentType}" yet`);
 		}
@@ -256,7 +255,6 @@ const ApiCaller_GET = class extends ApiCaller
 	}
 }
 
-
 /**
  * @template {string}N @template {string}R @template I @template O
  * @template {LapizReq<R>}Req @template {LapizRes}Res
@@ -278,7 +276,6 @@ const ApiCaller_POST = class extends ApiCaller
 	}
 }
 
-
 /**
  * @template {string}N @template {string}R @template I @template O
  * @template {LapizReq<R>}Req @template {LapizRes}Res
@@ -299,7 +296,6 @@ const ApiCaller_PUT = class extends ApiCaller
 		super(endpointName, "PUT", host, endpointRoute);
 	}
 }
-
 
 /**
  * @template {string}N @template {string}R @template I @template O
@@ -327,4 +323,4 @@ ApiCaller.PUT = ApiCaller_PUT;
 ApiCaller.POST = ApiCaller_POST;
 ApiCaller.DELETE = ApiCaller_DELETE;
 
-module.exports = ApiCaller;
+export default ApiCaller;

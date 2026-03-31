@@ -1,3 +1,4 @@
+
 /**
  * @file
  * @source ./lib/sdk/index.js
@@ -6,11 +7,11 @@
  */
 
 /**
- * @import {IApiCaller} from "#lib/api-caller/index.js"
- * @import { TLapizFrontendError } from "#lib/frontend-error/index.js"
+ * @import {IApiCaller} from "#module-js-lib/api-caller/index.js"
+ * @import { TLapizFrontendError } from "#module-js-lib/frontend-error/index.js"
  */
 
-const ApiCaller = require("#lib/api-caller/index.js");
+import ApiCaller from "#module-js-lib/api-caller/index.js";
 
 /**
  * @template {IApiCaller<string, string, any, any, any, any>[]}Callers
@@ -55,4 +56,4 @@ const SDK = class
 	}
 }
 
-module.exports = SDK;
+export default SDK;

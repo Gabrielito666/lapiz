@@ -1,11 +1,11 @@
 {
 	"name": "lapiz",
-	"version": "2.0.7-beta",
+	"version": "2.0.8-beta",
 	"description": "jsDocs typed APIS maker",
 	"license": "ISC",
 	"author": "Gabriel Farías R",
 	"type": "commonjs",
-	"main": "./lib/lapiz/index.js",
+	"main": "./lib/apiz/index.js",
 	"keywords": [
 		"api",
 		"express",
@@ -30,25 +30,40 @@
 		"node": ">=18.0.0"
 	},
 	"imports": {
-		"#lib/*": "./lib/*"
+		"#lib/*": "./lib/*",
+		"#module-js-lib/*": "./module-js-lib/*",
+		"#test/*": "./tests/*"
 	},
 	"exports": {
         	"./sdk": {
-			"import": "./lib/sdk/index.js",
-			"default": "./lib/sdk/index.js"
+			"import": "./module-js.lib/sdk/index.js",
+			"require": "./lib/sdk/index.js"
 		},
         	"./api-caller": {
-			"import": "./lib/api-caller/index.js",
-			"default": "./lib/api-caller/index.js"
+			"import": "./module-js-lib/api-caller/index.js",
+			"require": "./lib/api-caller/index.js"
 		},
-        	"./router": { "require": "./lib/router/index.js" },
-        	"./route-handler": { "require": "./lib/route-handler/index.js" },
+        	"./router": {
+			"import": "./module-js-lib/router/index.js",
+			"require": "./lib/router/index.js"
+		},
+        	"./route-handler": {
+			"import": "./module-js-lib/route-handler/index.js",
+			"require": "./lib/route-handler/index.js"
+		},
 		"./frontend-error": {
-			"import": "./lib/frontend-error/index.js",
-			"default": "./lib/frontend-error/index.js"
+			"import": "./module-js-lib/frontend-error/index.js",
+			"require": "./lib/frontend-error/index.js"
 		},
-        	"./backend-error": { "require": "./lib/backend-error/index.js" }
+        	"./backend-error": {
+			"import": "./module-js-lib/backend-error/index.js",
+			"require": "./lib/backend-error/index.js"
+		}
   	},
+	"scripts": {
+		"to-esm": "node scripts/to-esm.js",
+		"test": "node --test"
+	},
 	"dependencies": {
 		"express": "5.1.0"
 	},
