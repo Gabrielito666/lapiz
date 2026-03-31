@@ -1,3 +1,4 @@
+import ApiCaller from '#module-js-lib/api-caller/index.js'
 
 /**
  * @file
@@ -10,8 +11,6 @@
  * @import {IApiCaller} from "#module-js-lib/api-caller/index.js"
  * @import { TLapizFrontendError } from "#module-js-lib/frontend-error/index.js"
  */
-
-import ApiCaller from "#module-js-lib/api-caller/index.js";
 
 /**
  * @template {IApiCaller<string, string, any, any, any, any>[]}Callers

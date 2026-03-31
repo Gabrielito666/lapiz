@@ -152,15 +152,16 @@ const ApiCaller = class
 		}
 
 		const resContentType = data.headers.get("content-type");
+		const normalizedResContentType = resContentType ? resContentType.split(";")[0].trim() : null;
 
-		if(!resContentType || data.body === null)
+		if(!normalizedResContentType || data.body === null)
 		{
 			return {
 				rawRes: data,
 				extra: { contentType: null, body: null }
 			};
 		}
-		if(resContentType === "application/json")
+		if(normalizedResContentType === "application/json")
 		{
 			const parsed = await ApiCaller.toSafe(data.json());
 			if(parsed.error) return new ApiCaller.Error.ParseError("[LAPIZ ERROR]: Error when try parse the body with res.json()", parsed.error)
@@ -169,7 +170,7 @@ const ApiCaller = class
 				extra: { contentType: "application/json", body: parsed.data }
 			}
 		}
-		if(resContentType === "text/plain")
+		if(normalizedResContentType === "text/plain")
 		{
 			const parsed = await ApiCaller.toSafe(data.text());
 			if(parsed.error) return new ApiCaller.Error.ParseError("[LAPIZ ERROR]: Error when try parse the body with res.text()", parsed.error);
@@ -179,7 +180,7 @@ const ApiCaller = class
 				extra: { contentType: "text/plain", body: parsed.data }
 			}
 		}
-		if(!BINARY_MIME_TYPES.includes(resContentType))
+		if(!BINARY_MIME_TYPES.includes(normalizedResContentType))
 		{
 			throw new Error(`Lapiz not support mimetype "${resContentType}" yet`);
 		}

@@ -1,11 +1,10 @@
+import LapizBackendError from '#module-js-lib/backend-error/index.js'
 
 /**
  * @file
  * @source lib/endpoint-handler/index.js
  * @module lapiz/route-handler
  */
-
-import LapizBackendError from "#module-js-lib/backend-error/index.js";
 
 /**
  * @import {LapizReq, LapizRes, LapizReqVOID} from "#module-js-lib/types/backend.d.ts"
