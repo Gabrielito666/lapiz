@@ -47,7 +47,7 @@ describe("Server integration", () => {
         body: JSON.stringify({ age: "not-a-number" })
       });
 
-      assert.strictEqual(res.status, 500);
+      assert.strictEqual(res.status, 400);
       assert.strictEqual(res.headers.get("lapiz-backend-error"), "bad-request");
     });
   });
