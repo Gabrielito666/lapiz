@@ -122,7 +122,7 @@ describe("RouteHandler", () => {
       assert.ok(Array.isArray(sentBody.pigs));
     });
 
-    it("returns 500 on BadRequest", async () => {
+    it("returns 400 on BadRequest from parseInput", async () => {
       const handler = new CreatePig();
       const middleware = RouteHandler.makeMiddelware(handler);
 
@@ -131,8 +131,9 @@ describe("RouteHandler", () => {
         body: { age: "bad" }
       };
       const headers = {};
+      let sentStatus = null;
       const mockRes = {
-        status: (code) => { return mockRes; },
+        status: (code) => { sentStatus = code; return mockRes; },
         setHeader: (k, v) => { headers[k] = v; },
         send: () => {},
         getHeader: (k) => headers[k]
@@ -140,7 +141,141 @@ describe("RouteHandler", () => {
 
       await middleware(mockReq, mockRes);
 
+      assert.strictEqual(sentStatus, 400);
       assert.strictEqual(mockRes.getHeader("lapiz-backend-error"), "bad-request");
+    });
+
+    it("handle returns BadRequest and middleware sets headers", async () => {
+      const handler = new CreatePig();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      const mockReq = {
+        params: { name: "existing-pig" },
+        body: { age: 3 }
+      };
+      const headers = {};
+      let sentStatus = null;
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: (k, v) => { headers[k] = v; },
+        send: () => {},
+        getHeader: (k) => headers[k],
+        json: () => {},
+        contentType: () => {}
+      };
+
+      // Mock handle to return BadRequest
+      const originalHandle = handler.handle;
+      handler.handle = async () => {
+        return new RouteHandler.Error.BadRequest("Pig already exists");
+      };
+
+      await middleware(mockReq, mockRes);
+
+      assert.strictEqual(sentStatus, 400);
+      assert.strictEqual(headers["lapiz-backend-error"], "bad-request");
+      assert.strictEqual(headers["lapiz-backend-error-message"], "Pig already exists");
+
+      handler.handle = originalHandle;
+    });
+
+    it("handle returns Forbidden and middleware sets status 403", async () => {
+      const handler = new CreatePig();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      const mockReq = {
+        params: { name: "oink" },
+        body: { age: 3 }
+      };
+      const headers = {};
+      let sentStatus = null;
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: (k, v) => { headers[k] = v; },
+        send: () => {},
+        getHeader: (k) => headers[k],
+        json: () => {},
+        contentType: () => {}
+      };
+
+      const originalHandle = handler.handle;
+      handler.handle = async () => {
+        return new RouteHandler.Error.Forbidden("Only admins can create pigs");
+      };
+
+      await middleware(mockReq, mockRes);
+
+      assert.strictEqual(sentStatus, 403);
+      assert.strictEqual(headers["lapiz-backend-error"], "forbidden");
+      assert.strictEqual(headers["lapiz-backend-error-message"], "Only admins can create pigs");
+
+      handler.handle = originalHandle;
+    });
+
+    it("handle returns InternalServerError and middleware sets status 500", async () => {
+      const handler = new CreatePig();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      const mockReq = {
+        params: { name: "oink" },
+        body: { age: 3 }
+      };
+      const headers = {};
+      let sentStatus = null;
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: (k, v) => { headers[k] = v; },
+        send: () => {},
+        getHeader: (k) => headers[k],
+        json: () => {},
+        contentType: () => {}
+      };
+
+      const originalHandle = handler.handle;
+      handler.handle = async () => {
+        return new RouteHandler.Error.InternalServerError("Database error");
+      };
+
+      await middleware(mockReq, mockRes);
+
+      assert.strictEqual(sentStatus, 500);
+      assert.strictEqual(headers["lapiz-backend-error"], "internal-server-error");
+      assert.strictEqual(headers["lapiz-backend-error-message"], "Database error");
+
+      handler.handle = originalHandle;
+    });
+
+    it("handle throws error and middleware returns status 500", async () => {
+      const handler = new CreatePig();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      const mockReq = {
+        params: { name: "oink" },
+        body: { age: 3 }
+      };
+      const headers = {};
+      let sentStatus = null;
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: (k, v) => { headers[k] = v; },
+        send: () => {},
+        getHeader: (k) => headers[k],
+        json: () => {},
+        contentType: () => {}
+      };
+
+      const originalHandle = handler.handle;
+      handler.handle = async () => {
+        throw new Error("unexpected db failure");
+      };
+
+      await middleware(mockReq, mockRes);
+
+      assert.strictEqual(sentStatus, 500);
+      assert.strictEqual(headers["lapiz-backend-error"], "internal-server-error");
+      assert.strictEqual(headers["lapiz-backend-error-message"], "Unexpected server error");
+
+      handler.handle = originalHandle;
     });
   });
 });
