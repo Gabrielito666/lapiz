@@ -1,6 +1,6 @@
 # Lapiz
 
-Lapiz (or `lek-apis`) is a class library for standardizing API endpoints on both the backend and frontend.
+Lapiz (`lapiz`) is a class library for standardizing API endpoints on both the backend and frontend.
 
 ## Installation
 
@@ -10,16 +10,52 @@ npm i lapiz
 
 ---
 
+## Quick error handling pattern
+
+In both `RouteHandler.handle()` and `ApiCaller.parseOutput()`, instead of returning the full response, you can return a quick error:
+
+```javascript
+// RouteHandler.handle()
+return RouteHandler.Error.BadRequest("Invalid input");
+// or
+return RouteHandler.Error.Forbidden("Not authorized");
+// or
+return RouteHandler.Error.InternalServerError("Database failed");
+
+// ApiCaller.parseOutput()
+return new ApiCaller.Error.BadResponse("Unexpected response");
+```
+
+---
+
 ## ApiCaller (frontend)
 
-An `ApiCaller` is an abstract class you must extend to define how each API endpoint is called from the frontend. You must implement three methods:
+An `ApiCaller` is an abstract class you extend to define how each API endpoint is called from the frontend. You must implement two methods:
 
-- `buildReq(input)` — builds the request object from the input.
-- `parseOutput(rawRes, extra)` — parses the raw response and returns the final output that the SDK consumer will receive.
+- `buildReq(input)` — builds the request object from the input
+- `parseOutput(rawRes, extra)` — parses the raw response and returns the final output
+
+### Error pipeline
+
+When you call `sdk.call("endpoint", input)`, Lapiz handles errors automatically:
+
+```
+fetch()
+  ├─ Network/fetch fails       → FetchError
+  ├─ Server responded with error headers (bad-request, forbidden, internal-server-error)
+  │                            → the corresponding LapizFrontendError
+  ├─ Response body can't be parsed (JSON/text invalid)
+  │                            → ParseError
+  └─ All good                  → parseOutput() is called
+                                    └─ If response is unexpected → BadResponse()
+```
+
+**Key point:** By the time `parseOutput()` is called, all typical errors have already been filtered. The only error `parseOutput()` should return is `BadResponse()` when the server response doesn't match what you expect.
+
+### Example
 
 ```javascript
 import ApiCaller from "lapiz/api-caller"
-import LapizFrontendError from "lapiz/frontend-error"
 import { hostName } from "./constants.js"
 
 /**
@@ -31,15 +67,6 @@ import { hostName } from "./constants.js"
  * @typedef {{ status: 200 | 500 }} Res
  */
 
-/**
- * @import {IApiCaller} from "lapiz/api-caller"
- */
-
-/**
- * @class
- * @extends {ApiCaller.PUT<Name, Route, Input, Output, Req, Res>}
- * @implements {IApiCaller<Name, Route, Input, Output, Req, Res>}
- */
 const CreatePig = class extends ApiCaller.PUT
 {
 	constructor()
@@ -60,13 +87,21 @@ const CreatePig = class extends ApiCaller.PUT
 	/** @type {IApiCaller<Name, Route, Input, Output, Req, Res>["parseOutput"]} */
 	parseOutput(rawResponse, extra)
 	{
-		if(rawResponse.status === 200) return { success: true, error: null };
-		if(rawResponse.status === 500) return {
-			success: false,
-			error: new Error("Failed to create pig")
-		};
+		// If we get here, the response has status 200 and valid content-type
+		// Just check that the body is what we expect
+		if(extra.contentType !== "application/json")
+		{
+			return new ApiCaller.Error.BadResponse("Expected JSON response");
+		}
 
-		return new ApiCaller.Error.UnexpectedResponse("Unexpected server response");
+		const body = extra.body;
+		if(typeof body.success !== "boolean")
+		{
+			return new ApiCaller.Error.BadResponse("Unexpected body shape");
+		}
+
+		// Happy path - return the parsed output
+		return { success: body.success, error: null };
 	}
 }
 
@@ -77,47 +112,46 @@ There are four variants depending on the HTTP method: `ApiCaller.GET`, `ApiCalle
 
 ---
 
-## SDK (frontend)
-
-The `SDK` groups multiple `ApiCaller`s and exposes a `call(name, input)` method with automatically inferred typing.
-
-```javascript
-import SDK from "lapiz/sdk";
-import CreatePig from "./create-pig.js"
-
-const sdk = new SDK(
-	new CreatePig(),
-	// ...more callers
-);
-
-(async () =>
-{
-	const res = await sdk.call("create-pig", { name: "oink", age: 66 });
-
-	if(res.error)
-	{
-		console.error(res.error); // LapizFrontendError with the problem
-	}
-	else
-	{
-		console.log(res.output); // { success: true; error: null } | { success: false; error: Error }
-	}
-})();
-```
-
----
-
 ## RouteHandler (backend)
 
 The `RouteHandler` is the server-side equivalent of the `ApiCaller`. You must implement three methods:
 
-- `parseInput(expressReq)` — extracts and validates the input from the Express request. Returns the input or a `LapizBackendError.BadRequest`.
-- `handle(input, extra)` — contains the endpoint logic. Returns the output.
+- `parseInput(expressReq)` — extracts and validates the input from the Express request. Returns the input or a quick error (`RouteHandler.Error.BadRequest`).
+- `handle(input, extra)` — contains the endpoint logic. Returns the output OR a quick error (`RouteHandler.Error.BadRequest`, `RouteHandler.Error.Forbidden`, `RouteHandler.Error.InternalServerError`).
 - `buildRes(output, extra)` — builds the `LapizRes` response object from the output.
+
+### Quick errors
+
+In `handle()`, instead of returning the output, you can return a quick error:
+
+```javascript
+async handle(input, extra)
+{
+	const existingPig = await db.findPig(input.name);
+	if(existingPig)
+	{
+		return RouteHandler.Error.BadRequest("Pig already exists");
+	}
+
+	if(!extra.expressReq.user?.isAdmin)
+	{
+		return RouteHandler.Error.Forbidden("Only admins can create pigs");
+	}
+
+	const result = await db.insertPig(input.name, input.age);
+	if(!result)
+	{
+		return RouteHandler.Error.InternalServerError("Database error");
+	}
+
+	return { success: true }; // Success output
+}
+```
+
+### Example
 
 ```javascript
 const RouteHandler = require("lapiz/route-handler");
-const LapizBackendError = require("lapiz/backend-error");
 
 /**
  * The types (N, R, I, O, Req, Res) are the same as in the frontend ApiCaller.
@@ -136,7 +170,7 @@ const CreatePig = class extends RouteHandler.PUT
 	{
 		if(typeof rawExpressReq.body.age !== "number")
 		{
-			return new LapizBackendError.BadRequest("The 'age' field must be a number");
+			return new RouteHandler.Error.BadRequest("The 'age' field must be a number");
 		}
 		return {
 			name: rawExpressReq.params.name,
@@ -144,8 +178,9 @@ const CreatePig = class extends RouteHandler.PUT
 		};
 	}
 
-	async handle(input)
+	async handle(input, extra)
 	{
+		// Business logic - can return output OR a quick error
 		await myDatabase.insertPig(input.name, input.age);
 		return { success: true, error: null };
 	}
@@ -186,6 +221,59 @@ app.listen(3000, () => { console.log("Listening on localhost:3000") });
 
 ---
 
+## SDK (frontend)
+
+The `SDK` groups multiple `ApiCaller`s and exposes a `call(name, input)` method with automatically inferred typing.
+
+```javascript
+import SDK from "lapiz/sdk";
+import CreatePig from "./create-pig.js"
+
+const sdk = new SDK(
+	new CreatePig(),
+	// ...more callers
+);
+
+(async () =>
+{
+	const res = await sdk.call("create-pig", { name: "oink", age: 66 });
+
+	if(res.error)
+	{
+		console.error(res.error); // LapizFrontendError with the problem
+	}
+	else
+	{
+		console.log(res.output); // { success: true; error: null } | { success: false; error: Error }
+	}
+})();
+```
+
+---
+
+## Error types
+
+### Backend errors (`LapizBackendError`)
+
+Used in `RouteHandler`:
+
+- `RouteHandler.Error.BadRequest` — 400, invalid input
+- `RouteHandler.Error.Forbidden` — 403, not authorized
+- `RouteHandler.Error.InternalServerError` — 500, unexpected server failure
+
+### Frontend errors (`LapizFrontendError`)
+
+Returned by `sdk.call()`:
+
+- `ApiCaller.Error.FetchError` — network/fetch failed (no connection, CORS, timeout)
+- `ApiCaller.Error.BadRequest` — server returned 400
+- `ApiCaller.Error.Forbidden` — server returned 403
+- `ApiCaller.Error.InternalServerError` — server returned 500
+- `ApiCaller.Error.ParseError` — couldn't parse the response body
+- `ApiCaller.Error.BadResponse` — `parseOutput()` detected an unexpected response format
+
+---
+
 ## Notes on body types
 
 When the `content-type` is `application/json`, `text/plain`, or there is no body (`void`), the `Req` and `Res` types are identical between frontend and backend.
@@ -199,15 +287,6 @@ For binary content (`BinaryMimeType`), the `body` type differs:
 
 ---
 
-## Error handling
-
-All errors that `sdk.call()` can return are instances of `LapizFrontendError`:
-
-- `LapizFrontendError.FetchError` — the `fetch` call failed (no connection, CORS, etc.).
-- `LapizFrontendError.ServerError` — the server returned the `lapiz-backend-error` header.
-- `LapizFrontendError.ParseError` — error while parsing the response body.
-- `LapizFrontendError.UnexpectedResponse` — `parseResFromRaw` returned an unhandled response.
-
-#### Important notes:
+## Additional notes
 
 Currently, the GET and DELETE methods in routeHandler do not throw an error if they receive a body. Be sure not to use either contentType or body in these methods, as this can lead to silent errors.
