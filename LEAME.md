@@ -21,6 +21,8 @@ return RouteHandler.Error.BadRequest("Input inválido");
 return RouteHandler.Error.Forbidden("No autorizado");
 // o
 return RouteHandler.Error.InternalServerError("Error de base de datos");
+// o
+return RouteHandler.Error.NotFound("No se encuentra el recurso");
 
 // ApiCaller.parseOutput()
 return new ApiCaller.Error.BadResponse("Respuesta inesperada");

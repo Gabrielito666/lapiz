@@ -260,6 +260,7 @@ Used in `RouteHandler`:
 - `RouteHandler.Error.BadRequest` — 400, invalid input
 - `RouteHandler.Error.Forbidden` — 403, not authorized
 - `RouteHandler.Error.InternalServerError` — 500, unexpected server failure
+- `RouteHandler.Error.NotFound` — 404, not found
 
 ### Frontend errors (`LapizFrontendError`)
 
@@ -269,6 +270,7 @@ Returned by `sdk.call()`:
 - `ApiCaller.Error.BadRequest` — server returned 400
 - `ApiCaller.Error.Forbidden` — server returned 403
 - `ApiCaller.Error.InternalServerError` — server returned 500
+- `ApiCaller.Error.NotFound` — server returned 404
 - `ApiCaller.Error.ParseError` — couldn't parse the response body
 - `ApiCaller.Error.BadResponse` — `parseOutput()` detected an unexpected response format
 
