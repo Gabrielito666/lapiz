@@ -10,7 +10,7 @@ import LapizBackendError from '#module-js-lib/backend-error/index.js'
  * @import {LapizReq, LapizRes, LapizReqVOID} from "#module-js-lib/types/backend.d.ts"
  * @import {Request as ExpressReq, Response as ExpressRes} from "express"
  * @import {
- *	TLapizBackendError_BadRequest
+ *	TLapizBackendError_BadRequest, TLapizBackendError_InternalServerError
  * } from "#module-js-lib/backend-error/index.js"
  */
 /**
@@ -29,7 +29,10 @@ import LapizBackendError from '#module-js-lib/backend-error/index.js'
  *		TLapizBackendError_BadRequest |
  *		Promise<I|TLapizBackendError_BadRequest>
  *	);
- *	handle(input: I, extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}):Promise<O>|O;
+ *	handle(
+ *		input: I,
+ *		extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}
+ *	):Promise<O>|O|TLapizBackendError_InternalServerError|Promise<TLapizBackendError_InternalServerError>;
  *	buildRes(output:O, extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}):Res|Promise<Res>;
  * }} IRouteHandler
  */
@@ -109,9 +112,11 @@ const RouteHandler = class
 		}
 		if(!lapizRes.contentType)
 		{
+			expressRes.setHeader("lapiz-void-response", "true");
 			expressRes.send();
 			return void 0;
 		}
+
 		expressRes.contentType(lapizRes.contentType);
 		if(lapizRes.contentType === "application/json")
 		{
@@ -137,8 +142,9 @@ const RouteHandler = class
 			const input = await routeHandler.parseInput(expressReq);
 			if(input instanceof LapizBackendError)
 			{
-				expressRes.setHeader("lapiz-backend-error", "bad-request");
-				expressRes.status(500);
+				expressRes.setHeader("lapiz-backend-error", input.type);
+				if(input.message) expressRes.setHeader("lapiz-backend-error-message", input.message);
+				expressRes.status(input.code);
 				expressRes.send();
 				return void 0;
 			}
@@ -151,14 +157,24 @@ const RouteHandler = class
 				console.warn("[LAPIZ WARN]: handle method throws a error: ");
 				console.warn(error);
 	
-				expressRes.setHeader("lapiz-backend-error", "unexpected-server-error");
-				expressRes.status(400);
+				expressRes.setHeader("lapiz-backend-error", "internal-server-error");
+				expressRes.setHeader("lapiz-backend-error-message", "Unexpected server error");
+				expressRes.status(500);
+				expressRes.send();
+				return void 0;
+			}
+
+			if(data instanceof LapizBackendError)
+			{
+				expressRes.setHeader("lapiz-backend-error", data.type);
+				if(data.message) expressRes.setHeader("lapiz-backend-error-message", data.message);
+				expressRes.status(data.code);
 				expressRes.send();
 				return void 0;
 			}
 
 			const lapizRes = await routeHandler.buildRes(data, { expressReq, expressRes });
-			return  RouteHandler.send(expressRes, lapizRes);
+			return RouteHandler.send(expressRes, lapizRes);
 		}
 	}
 }

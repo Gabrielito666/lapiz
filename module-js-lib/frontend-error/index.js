@@ -8,7 +8,7 @@
 const LapizFrontendError = class
 {
 	/**
-	 * @param {"unexpected-server-error"|"unexpected-server-response"|"fetch-error"|"parse-error"} type
+	 * @param {"internal-server-error"|"bad-request"|"forbidden"|"bad-response"|"not-found"|"fetch-error"|"parse-error"} type
 	 * @param {string} [message]
 	 * @param {Error} [jsError]
 	 */
@@ -18,30 +18,72 @@ const LapizFrontendError = class
 		this.message = message;
 		this.jsError = jsError;
 	}
+	/**
+	 * @param {Response} res
+	 */
+	static byResponse(res)
+	{
+		const type = res.headers.get("lapiz-backend-error");
+		const message = res.headers.get("lapiz-backend-error-message") || undefined;
+		if(type === "internal-server-error") return new LapizFrontendError_InternalServerError(message);
+		if(type === "bad-request") return new LapizFrontendError_BadRequest(message);
+		if(type === "forbidden") return new LapizFrontendError_Forbidden(message);
+		if(type === "not-found") return new LapizFrontendError_NotFound(message);
+
+		return void 0;
+	}
 }
 
-const LapizFrontendError_ServerError = class extends LapizFrontendError
+const LapizFrontendError_InternalServerError = class extends LapizFrontendError
 {
 	/**
 	 * @param {string} [message]
 	 */
 	constructor(message)
 	{
-		super("unexpected-server-error", message);
+		super("internal-server-error", message);
 	}
 }
-
-const LapizFrontendError_UnexpectedResponse = class extends LapizFrontendError
+const LapizFrontendError_BadRequest = class extends LapizFrontendError
 {
 	/**
 	 * @param {string} [message]
 	 */
 	constructor(message)
 	{
-		super("unexpected-server-response", message);
+		super("bad-request", message);
 	}
 }
-
+const LapizFrontendError_Forbidden = class extends LapizFrontendError
+{
+	/**
+	 * @param {string} [message]
+	 */
+	constructor(message)
+	{
+		super("forbidden", message);
+	}
+}
+const LapizFrontendError_BadResponse = class extends LapizFrontendError
+{
+	/**
+	 * @param {string} [message]
+	 */
+	constructor(message)
+	{
+		super("bad-response", message);
+	}
+}
+const LapizFrontendError_NotFound = class extends LapizFrontendError
+{
+	/**
+	 * @param {string} [message]
+	 */
+	constructor(message)
+	{
+		super("not-found", message);
+	}
+}
 const LapizFrontendError_FetchError = class extends LapizFrontendError
 {
 	/**
@@ -65,17 +107,23 @@ const LapizFrontendError_ParseError = class extends LapizFrontendError
 		super("parse-error", message, jsError);
 	}
 }
-LapizFrontendError.ServerError = LapizFrontendError_ServerError;
-LapizFrontendError.UnexpectedResponse = LapizFrontendError_UnexpectedResponse;
+LapizFrontendError.InternalServerError = LapizFrontendError_InternalServerError;
+LapizFrontendError.BadRequest = LapizFrontendError_BadRequest;
+LapizFrontendError.Forbidden = LapizFrontendError_Forbidden;
+LapizFrontendError.BadResponse = LapizFrontendError_BadResponse;
+LapizFrontendError.NotFound = LapizFrontendError_NotFound;
 LapizFrontendError.FetchError = LapizFrontendError_FetchError;
-LapizFrontendError.ParseError = LapizFrontendError_ParseError
+LapizFrontendError.ParseError = LapizFrontendError_ParseError;
 
 /**
  * @typedef {LapizFrontendError} TLapizFrontendError
- * @typedef {LapizFrontendError_ServerError} TLapizFrontendError_ServerError
- * @typedef {LapizFrontendError_UnexpectedResponse} TLapizFrontendError_UnexpectedResponse
+ * @typedef {LapizFrontendError_InternalServerError} TLapizFrontendError_InternalServerError
+ * @typedef {LapizFrontendError_BadRequest} TLapizFrontendError_BadRequest
+ * @typedef {LapizFrontendError_Forbidden} TLapizFrontendError_Forbidden
+ * @typedef {LapizFrontendError_BadResponse} TLapizFrontendError_BadResponse
  * @typedef {LapizFrontendError_FetchError} TLapizFrontendError_FetchError
  * @typedef {LapizFrontendError_ParseError} TLapizFrontendError_ParseError
+ * @typedef {LapizFrontendError_NotFound} TLapizFrontendError_NotFound
  */
 
 export default LapizFrontendError;
