@@ -3,6 +3,8 @@ const assert = require("node:assert");
 const RouteHandler = require("#lib/route-handler/index.js");
 const { CreatePig } = require("../fixtures/route-handlers/create-pig.js");
 const { ListPigs } = require("../fixtures/route-handlers/list-pigs.js");
+const { NextParseInput, NextHandle, NextBuildRes } = require("../fixtures/route-handlers/next.js");
+const { UseMiddleware } = require("../fixtures/route-handlers/use-chain.js");
 
 describe("RouteHandler", () => {
   describe("CreatePig", () => {
@@ -276,6 +278,150 @@ describe("RouteHandler", () => {
       assert.strictEqual(headers["lapiz-backend-error-message"], "Unexpected server error");
 
       handler.handle = originalHandle;
+    });
+  });
+
+  describe("NEXT", () => {
+    it("parseInput returning NEXT calls expressNext and sends no response", async () => {
+      const handler = new NextParseInput();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+
+    it("parseInput returning Promise(NEXT) calls expressNext", async () => {
+      const handler = new NextParseInput();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      // Override parseInput to return a Promise
+      handler.parseInput = async () => RouteHandler.NEXT;
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+
+    it("handle returning NEXT calls expressNext and sends no response", async () => {
+      const handler = new NextHandle();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+
+    it("handle returning Promise(NEXT) calls expressNext", async () => {
+      const handler = new NextHandle();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      // Override handle to return a Promise
+      handler.handle = async () => RouteHandler.NEXT;
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+
+    it("buildRes returning NEXT calls expressNext and sends no response", async () => {
+      const handler = new NextBuildRes();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+
+    it("buildRes returning Promise(NEXT) calls expressNext", async () => {
+      const handler = new NextBuildRes();
+      const middleware = RouteHandler.makeMiddelware(handler);
+
+      // Override buildRes to return a Promise
+      handler.buildRes = async () => RouteHandler.NEXT;
+
+      let nextCalled = false;
+      let sentStatus = null;
+      const mockReq = {};
+      const mockRes = {
+        status: (code) => { sentStatus = code; return mockRes; },
+        setHeader: () => {},
+        send: () => {},
+        json: () => {}
+      };
+      const mockNext = () => { nextCalled = true; };
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      assert.strictEqual(nextCalled, true);
+      assert.strictEqual(sentStatus, null);
+    });
+  });
+
+  describe("USE method", () => {
+    it("USE handler has correct method property", () => {
+      const handler = new UseMiddleware();
+      assert.strictEqual(handler.method, "USE");
     });
   });
 });
