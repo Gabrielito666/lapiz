@@ -22,7 +22,7 @@ const Router = class
 
 		routeHandlers.forEach(rh =>
 		{	
-			const method = /**@type {"get"|"put"|"post"|"delete"}*/(rh.method.toLowerCase());
+			const method = /**@type {"get"|"put"|"post"|"delete"|"use"}*/(rh.method.toLowerCase());
 			const midd = RouteHandler.makeMiddelware(rh);
 			this.expressRouter[method](rh.route, midd);
 		});

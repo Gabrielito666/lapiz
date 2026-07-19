@@ -116,9 +116,9 @@ There are four variants depending on the HTTP method: `ApiCaller.GET`, `ApiCalle
 
 The `RouteHandler` is the server-side equivalent of the `ApiCaller`. You must implement three methods:
 
-- `parseInput(expressReq)` — extracts and validates the input from the Express request. Returns the input or a quick error (`RouteHandler.Error.BadRequest`).
-- `handle(input, extra)` — contains the endpoint logic. Returns the output OR a quick error (`RouteHandler.Error.BadRequest`, `RouteHandler.Error.Forbidden`, `RouteHandler.Error.InternalServerError`).
-- `buildRes(output, extra)` — builds the `LapizRes` response object from the output.
+- `parseInput(expressReq)` — extracts and validates the input from the Express request. Returns the input, a quick error (`RouteHandler.Error.BadRequest`), or a RouteHandler.NEXT.
+- `handle(input, extra)` — contains the endpoint logic. Returns the output, a quick error (`RouteHandler.Error.BadRequest`, `RouteHandler.Error.Forbidden`, `RouteHandler.Error.InternalServerError`), or a RouteHandler.NEXT.
+- `buildRes(output, extra)` — builds the `LapizRes` response object from the output. Returns the `LapizRes` or a RouteHandler.NEXT.
 
 ### Quick errors
 
@@ -196,7 +196,19 @@ const CreatePig = class extends RouteHandler.PUT
 module.exports = CreatePig;
 ```
 
-There are four variants: `RouteHandler.GET`, `RouteHandler.POST`, `RouteHandler.PUT`, `RouteHandler.DELETE`.
+### RouteHandler.NEXT
+
+The methods you implement in a RouteHandler can return a `RouteHandler.NEXT`. This is a Symbol that tells `lapiz` to abandon the current middleware and pass control to the next one, just like Express's `next()` function.
+
+This means you can register multiple RouteHandlers on the same route (or using `USE`) and they will be registered as middlewares in the order you pass them to `Router`.
+
+My personal recommendation is that when chaining `RouteHandlers`, it's best to use the same `Input`, `Output`, `Req`, and `Res` signature, declaring them with broad unions that can cover both.
+
+### Variants
+
+There are five variants: `RouteHandler.GET`, `RouteHandler.POST`, `RouteHandler.PUT`, `RouteHandler.DELETE`, and `RouteHandler.USE`.
+
+Each one represents a different HTTP method, except `USE`, which registers a middleware for any HTTP method just like Express.
 
 ---
 

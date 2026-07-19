@@ -8,11 +8,14 @@ import LapizBackendError from '#module-js-lib/backend-error/index.js'
 
 /**
  * @import {LapizReq, LapizRes, LapizReqVOID} from "#module-js-lib/types/backend.d.ts"
- * @import {Request as ExpressReq, Response as ExpressRes} from "express"
+ * @import {Request as ExpressReq, Response as ExpressRes, NextFunction as ExpressNext} from "express"
  * @import {
  *	TLapizBackendError_BadRequest, TLapizBackendError_InternalServerError
  * } from "#module-js-lib/backend-error/index.js"
  */
+
+const __NEXT_SYMBOL__ = Symbol();
+
 /**
  * @template {string}N
  * @template {string}R
@@ -22,18 +25,32 @@ import LapizBackendError from '#module-js-lib/backend-error/index.js'
  * @template {LapizRes}Res
  * @typedef {{
  *	name: N;
- *	method: "GET"|"PUT"|"POST"|"DELETE";
+ *	method: "GET"|"PUT"|"POST"|"DELETE"|"USE";
  *	route: R;
  *	parseInput(expressReq: ExpressReq<R>):(
  *		I |
  *		TLapizBackendError_BadRequest |
- *		Promise<I|TLapizBackendError_BadRequest>
+ *		Promise<I|TLapizBackendError_BadRequest> |
+ *		typeof __NEXT_SYMBOL__ |
+ *		Promise<typeof __NEXT_SYMBOL__>
  *	);
  *	handle(
  *		input: I,
  *		extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}
- *	):Promise<O>|O|TLapizBackendError_InternalServerError|Promise<TLapizBackendError_InternalServerError>;
- *	buildRes(output:O, extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}):Res|Promise<Res>;
+ *	):(
+ *		Promise<O> |
+ *		O |
+ *		TLapizBackendError_InternalServerError |
+ *		Promise<TLapizBackendError_InternalServerError> |
+ *		typeof __NEXT_SYMBOL__ |
+ *		Promise<typeof __NEXT_SYMBOL__>
+ *	);
+ *	buildRes(output:O, extra: {expressReq: ExpressReq<R>, expressRes: ExpressRes}):(
+ *		Res |
+ *		Promise<Res> |
+ *		typeof __NEXT_SYMBOL__ |
+ *		Promise<typeof __NEXT_SYMBOL__>
+ *	);
  * }} IRouteHandler
  */
 
@@ -51,9 +68,11 @@ import LapizBackendError from '#module-js-lib/backend-error/index.js'
 const RouteHandler = class
 {
 	static Error = LapizBackendError;
+	/**@type {typeof __NEXT_SYMBOL__}*/
+	static NEXT = __NEXT_SYMBOL__;
 	/**
 	 * @param {N} endpointName
-	 * @param {"GET"|"POST"|"PUT"|"DELETE"} endpointMethod
+	 * @param {"GET"|"POST"|"PUT"|"DELETE"|"USE"} endpointMethod
 	 * @param {R} endpointRoute
 	 */
 	constructor(endpointName, endpointMethod, endpointRoute)
@@ -133,13 +152,18 @@ const RouteHandler = class
 	}
 	/**
 	 * @param {IRouteHandler<any, any, any, any, any, any>} routeHandler
-	 * @returns {(expressReq: ExpressReq, expressRes: ExpressRes) => Promise<void>}
+	 * @returns {(expressReq: ExpressReq, expressRes: ExpressRes, expressNext: ExpressNext) => Promise<void>}
 	 */
 	static makeMiddelware(routeHandler)
 	{
-		return async(expressReq, expressRes) =>
+		return async(expressReq, expressRes, expressNext) =>
 		{
 			const input = await routeHandler.parseInput(expressReq);
+			if(input === __NEXT_SYMBOL__)
+			{
+				expressNext();
+				return void 0;
+			}
 			if(input instanceof LapizBackendError)
 			{
 				expressRes.setHeader("lapiz-backend-error", input.type);
@@ -163,7 +187,11 @@ const RouteHandler = class
 				expressRes.send();
 				return void 0;
 			}
-
+			if(data === __NEXT_SYMBOL__)
+			{
+				expressNext();
+				return void 0;
+			}
 			if(data instanceof LapizBackendError)
 			{
 				expressRes.setHeader("lapiz-backend-error", data.type);
@@ -174,7 +202,13 @@ const RouteHandler = class
 			}
 
 			const lapizRes = await routeHandler.buildRes(data, { expressReq, expressRes });
-			return RouteHandler.send(expressRes, lapizRes);
+			if(lapizRes === __NEXT_SYMBOL__)
+			{
+				expressNext();
+				return void 0;
+			}
+			RouteHandler.send(expressRes, lapizRes);
+			return void 0;
 		}
 	}
 }
@@ -255,10 +289,30 @@ const RouteHandler_DELETE = class extends RouteHandler
 		super(endpointName, "DELETE", endpointRoute);
 	}
 }
+/**
+ * @template {string} N @template {string} R
+ * @template I @template O @template {LapizReq<R>} Req @template {LapizRes} Res
+ * @class
+ * @abstract
+ * @implements {IRouteHandler<N, R, I, O, Req, Res>}
+ * @extends {RouteHandler<N, R, I, O, Req, Res>}
+ */
+const RouteHandler_USE = class extends RouteHandler
+{
+	/**
+	 * @param {N} endpointName
+	 * @param {R} endpointRoute
+	 */
+	constructor(endpointName, endpointRoute)
+	{
+		super(endpointName, "USE", endpointRoute);
+	}
+}
 
 RouteHandler.GET = RouteHandler_GET;
 RouteHandler.POST = RouteHandler_POST;
 RouteHandler.PUT = RouteHandler_PUT;
 RouteHandler.DELETE = RouteHandler_DELETE;
+RouteHandler.USE = RouteHandler_USE;
 
 export default RouteHandler;
