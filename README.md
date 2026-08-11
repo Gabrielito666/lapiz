@@ -210,6 +210,33 @@ There are five variants: `RouteHandler.GET`, `RouteHandler.POST`, `RouteHandler.
 
 Each one represents a different HTTP method, except `USE`, which registers a middleware for any HTTP method just like Express.
 
+### Redirects
+
+To return a redirect from `buildRes()`, you can use `RouteHandler.Response.Redirect`:
+
+```javascript
+buildRes(output)
+{
+	return new RouteHandler.Response.Redirect("/new/url");
+	// or with an explicit status
+	return new RouteHandler.Response.Redirect("/new/url", 301);
+}
+```
+
+This is exactly the same as returning the `LapizResVOID` object by hand:
+
+```javascript
+buildRes(output)
+{
+	return {
+		status: 302,
+		headers: { location: "/new/url" }
+	};
+}
+```
+
+Just more convenient: the constructor validates that the status is a 3xx code (it throws an error otherwise) and defaults to 302.
+
 ---
 
 ## Router (backend)
