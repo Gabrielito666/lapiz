@@ -1,3 +1,4 @@
+import LapizBackendResponse from '#module-js-lib/backend-response/index.js'
 import LapizBackendError from '#module-js-lib/backend-error/index.js'
 
 /**
@@ -68,6 +69,7 @@ const __NEXT_SYMBOL__ = Symbol();
 const RouteHandler = class
 {
 	static Error = LapizBackendError;
+	static Response = LapizBackendResponse;
 	/**@type {typeof __NEXT_SYMBOL__}*/
 	static NEXT = __NEXT_SYMBOL__;
 	/**
