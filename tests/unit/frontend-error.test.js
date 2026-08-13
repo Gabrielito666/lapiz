@@ -212,4 +212,40 @@ describe("LapizFrontendError", () => {
       assert.strictEqual(LapizFrontendError.ParseError, LapizFrontendError.ParseError);
     });
   });
+
+  describe("catalog declaration", () => {
+    const ERRORS = require("#lib/errors-mapper/index.js");
+
+    it("declares every catalog error as a static class", () => {
+      const classNames = Object.keys(ERRORS);
+
+      assert.ok(classNames.length >= 40, `expected at least 40 errors, got ${classNames.length}`);
+
+      for (const className of classNames) {
+        const { type } = ERRORS[className];
+        const errorClass = LapizFrontendError[className];
+
+        assert.strictEqual(typeof errorClass, "function", `${className} must be declared`);
+        const error = new errorClass("test message");
+        assert.ok(error instanceof LapizFrontendError, `${className} instance must extend LapizFrontendError`);
+        assert.strictEqual(error.type, type, `${className} must have type ${type}`);
+        assert.strictEqual(error.message, "test message", `${className} must keep the message`);
+      }
+    });
+
+    it("declares FetchError, ParseError and BadResponse as statics", () => {
+      assert.strictEqual(typeof LapizFrontendError.FetchError, "function");
+      assert.strictEqual(typeof LapizFrontendError.ParseError, "function");
+      assert.strictEqual(typeof LapizFrontendError.BadResponse, "function");
+    });
+
+    it("propagates jsError on FetchError and ParseError", () => {
+      const jsError = new Error("original error");
+      const fetchError = new LapizFrontendError.FetchError("fetch failed", jsError);
+      const parseError = new LapizFrontendError.ParseError("parse failed", jsError);
+
+      assert.strictEqual(fetchError.jsError, jsError);
+      assert.strictEqual(parseError.jsError, jsError);
+    });
+  });
 });

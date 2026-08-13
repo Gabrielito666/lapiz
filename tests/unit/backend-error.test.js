@@ -100,4 +100,33 @@ describe("LapizBackendError", () => {
       assert.strictEqual(LapizBackendError.InternalServerError, LapizBackendError.InternalServerError);
     });
   });
+
+  describe("catalog declaration", () => {
+    const ERRORS = require("#lib/errors-mapper/index.js");
+
+    it("declares every catalog error as a static class", () => {
+      const classNames = Object.keys(ERRORS);
+
+      assert.ok(classNames.length >= 40, `expected at least 40 errors, got ${classNames.length}`);
+
+      for (const className of classNames) {
+        const { code, type } = ERRORS[className];
+        const errorClass = LapizBackendError[className];
+
+        assert.strictEqual(typeof errorClass, "function", `${className} must be declared`);
+        const error = new errorClass("test message");
+        assert.ok(error instanceof LapizBackendError, `${className} instance must extend LapizBackendError`);
+        assert.strictEqual(error.code, code, `${className} must have code ${code}`);
+        assert.strictEqual(error.type, type, `${className} must have type ${type}`);
+        assert.strictEqual(error.message, "test message", `${className} must keep the message`);
+      }
+    });
+
+    it("declares legacy shortcut statics", () => {
+      assert.strictEqual(typeof LapizBackendError.BadRequest, "function");
+      assert.strictEqual(typeof LapizBackendError.Forbidden, "function");
+      assert.strictEqual(typeof LapizBackendError.NotFound, "function");
+      assert.strictEqual(typeof LapizBackendError.InternalServerError, "function");
+    });
+  });
 });
