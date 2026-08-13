@@ -14,9 +14,12 @@ describe("Server integration", () => {
     router.addToApp(app);
 
     return new Promise((resolve) => {
-      server = app.listen(3000, () => {
-        baseUrl = `http://localhost:3000`;
-        resolve(void 0);
+      server = app.listen(0, () => {
+        const address = server.address();
+        if (address && typeof address === "object") {
+          baseUrl = `http://localhost:${address.port}`;
+          resolve(void 0);
+        }
       });
     });
   });

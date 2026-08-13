@@ -26,10 +26,14 @@ describe("Redirect integration", () =>
 
 		return new Promise((resolve) =>
 		{
-			server = app.listen(3003, () =>
+			server = app.listen(0, () =>
 			{
-				baseUrl = `http://localhost:3003`;
-				resolve(void 0);
+				const address = server.address();
+				if(address && typeof address === "object")
+				{
+					baseUrl = `http://localhost:${address.port}`;
+					resolve(void 0);
+				}
 			});
 		});
 	});

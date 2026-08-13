@@ -36,7 +36,7 @@
 	},
 	"exports": {
         	"./sdk": {
-			"import": "./module-js.lib/sdk/index.js",
+			"import": "./module-js-lib/sdk/index.js",
 			"require": "./lib/sdk/index.js"
 		},
         	"./api-caller": {
