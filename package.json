@@ -1,6 +1,6 @@
 {
 	"name": "lapiz",
-	"version": "2.2.2",
+	"version": "2.2.3",
 	"description": "jsDocs typed APIS maker",
 	"license": "ISC",
 	"author": "Gabriel Farías R",
@@ -22,6 +22,7 @@
 	},
 	"files": [
 		"lib/",
+		"module-js-lib/",
 		"LICENSE",
 		"README.md",
 		"jsconfig.js"
