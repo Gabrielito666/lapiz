@@ -1,0 +1,6 @@
+{
+	type: "module",
+	"imports": {
+		"#module-js-lib/*": "./module-js-lib/*"
+	}
+}
